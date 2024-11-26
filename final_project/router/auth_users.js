@@ -10,19 +10,47 @@ const isValid = (username)=>{ //returns boolean
 }
 
 const authenticatedUser = (username,password)=>{ //returns boolean
-//write code to check if username and password match the one we have in records.
+return users.some((user) => user.username === username && user.password === password);
+
+
 }
 
 //only registered users can login
 regd_users.post("/login", (req,res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  const {username,password} = req.body;
+  if(!username || !password){
+    return res.status(400).json({message: "Missing username or password!"});
+  }
+  if (authenticatedUser(username,password)){
+    const payload = {
+        username,
+    };
+
+    const accessToken = jwt.sign(payload, 'access', {expiresIn: 60 * 60});
+
+    req.session.authorzation = {
+        accessToken, username
+    };
+
+    return res.status(200).json({message: "User successfully logged in"});
+  }
+
+  return res.status(400).json({message: "User not registered"});
 });
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const username = req.session.username;
+    const isbn = req.params.isbn;
+    const review = req.body.review;
+
+    if(books[isbn]){
+        books[isbn].reviews[username] = review;
+        return res.status(200).json({message: "Review added!"});
+    }
+    else{
+        return res.status(404).json({message: "Book not found"});
+    }
 });
 
 module.exports.authenticated = regd_users;
